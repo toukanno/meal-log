@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>食事ログ</title><style>
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Noto Sans JP',sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
+header{padding:2rem;text-align:center;border-bottom:1px solid rgba(255,255,255,.1);background:linear-gradient(135deg,#1a0a00,#0f172a)}
+h1{font-size:1.8rem;margin-bottom:.4rem}.sub{color:#94a3b8;font-size:.9rem}
+main{max-width:700px;margin:2rem auto;padding:0 1.5rem}
+.panel{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:1.5rem;margin-bottom:1.5rem}
+h2{color:#f59e0b;margin-bottom:1rem;font-size:1.05rem}
+.btn{padding:.7rem 1.5rem;background:#f59e0b;border:none;border-radius:6px;color:#000;cursor:pointer;font-size:.9rem;font-family:inherit;font-weight:700;margin:.3rem;transition:opacity .2s}.btn:hover{opacity:.8}
+input,select{width:100%;padding:.7rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);border-radius:6px;color:#e2e8f0;font-family:inherit;font-size:.9rem;margin:.3rem 0}
+input:focus,select:focus{outline:none;border-color:#f59e0b}
+label{font-size:.85rem;color:#94a3b8}
+.big{font-size:2.5rem;font-weight:900;color:#f59e0b;text-align:center}
+</style></head><body>
+<header><h1>🍽 食事ログ</h1><p class="sub">毎日の食事とカロリーを記録</p></header>
+<main><div class="panel">
+<h2>食事を記録</h2>
+<label>食事の種類</label>
+<select id="type"><option>朝食</option><option>昼食</option><option>夕食</option><option>間食</option></select>
+<label>食べたもの</label><input type="text" id="food" placeholder="例: ご飯、味噌汁、焼き魚">
+<label>カロリー (kcal 目安)</label><input type="number" id="kcal" placeholder="500">
+<button class="btn" onclick="save()" style="width:100%;margin-top:.5rem">記録する</button>
+</div>
+<div class="panel">
+<h2>今日の食事</h2>
+<div class="big" id="total_kcal">0 kcal</div>
+<div style="text-align:center;color:#94a3b8;font-size:.85rem;margin:.3rem 0">摂取カロリー合計</div>
+<div style="background:rgba(255,255,255,.1);border-radius:999px;height:8px;margin:1rem 0"><div id="bar" style="background:#f59e0b;height:8px;border-radius:999px;width:0%;transition:width .3s"></div></div>
+<div id="meals" style="display:flex;flex-direction:column;gap:.5rem;max-height:300px;overflow-y:auto"></div>
+</div></main><script>
+const GOAL=2000;
+function save(){
+  const type=document.getElementById("type").value;
+  const food=document.getElementById("food").value.trim();
+  const kcal=parseInt(document.getElementById("kcal").value)||0;
+  if(!food){alert("食べたものを入力してください");return;}
+  const today=new Date().toISOString().slice(0,10);
+  const rec={type,food,kcal,time:new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}),date:today};
+  const d=JSON.parse(localStorage.getItem("mealLog")||"[]");
+  d.unshift(rec);if(d.length>100)d.pop();
+  localStorage.setItem("mealLog",JSON.stringify(d));
+  document.getElementById("food").value="";document.getElementById("kcal").value="";
+  render();
+}
+function render(){
+  const today=new Date().toISOString().slice(0,10);
+  const all=JSON.parse(localStorage.getItem("mealLog")||"[]");
+  const todayMeals=all.filter(r=>r.date===today);
+  const total=todayMeals.reduce((s,r)=>s+r.kcal,0);
+  document.getElementById("total_kcal").textContent=total+" kcal";
+  document.getElementById("bar").style.width=Math.min(100,total/GOAL*100)+"%";
+  document.getElementById("meals").innerHTML=todayMeals.length?todayMeals.map(r=>
+    '<div style="display:flex;gap:.5rem;align-items:center;padding:.6rem;background:rgba(255,255,255,.03);border-radius:6px;font-size:.85rem">'+
+    '<span style="color:#94a3b8;width:40px">'+r.time+'</span>'+
+    '<span style="color:#f59e0b;width:35px;font-size:.75rem">'+r.type+'</span>'+
+    '<span style="flex:1">'+r.food+'</span>'+
+    '<span style="color:#f59e0b">'+r.kcal+'kcal</span></div>'
+  ).join(""):'<div style="color:#475569;font-size:.85rem">今日の記録がありません</div>';
+}
+render();</script></body></html>
